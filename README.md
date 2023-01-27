@@ -7,8 +7,8 @@ probability distributions and sequence design.
 
 ```julia
 using Pkg
-pkg"add https://github.com/marcom/DiffFoldRNA.jl"
 pkg"add https://github.com/marcom/FoldRNA.jl"
+pkg"add https://github.com/marcom/DiffFoldRNA.jl"
 ```
 
 ## Usage
@@ -30,3 +30,6 @@ design_ptarget(target, ViennaModel(); optim_options=(; iterations=10))
 seqstruct_partition(ones(10,4)/4, ViennaModel(); hpmin=3)
 ```
 
+## Citation
+
+TODO
