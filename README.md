@@ -7,7 +7,6 @@ probability distributions and sequence design.
 
 ```julia
 using Pkg
-pkg"add https://github.com/marcom/FoldRNA.jl"
 pkg"add https://github.com/marcom/DiffFoldRNA.jl"
 ```
 
