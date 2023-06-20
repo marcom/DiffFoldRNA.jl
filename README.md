@@ -1,5 +1,7 @@
 # DiffFoldRNA.jl
 
+[![Build Status](https://github.com/marcom/DiffFoldRNA.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/marcom/DiffFoldRNA.jl/actions/workflows/CI.yml?query=branch%3Amain)
+
 Differentiable RNA partition function calculation for sequence
 probability distributions and sequence design.  This implementation is
 currently CPU-only and can only deal with smallish sequences in a
