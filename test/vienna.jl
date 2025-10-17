@@ -1,4 +1,5 @@
 using Test, ProgressMeter, DataFrames
+using OffsetArrays, JET
 using DiffFoldRNA
 using DiffFoldRNA: test_all_1_nussinov_vienna, test_model_brute_vienna,
     test_seq_one_hot, test_seq_brute
@@ -70,5 +71,38 @@ using DiffFoldRNA: test_all_1_nussinov_vienna, test_model_brute_vienna,
     @testset "test_seq_brute" begin
         test_seq_brute(nrange=1:12, model=RandomModel(), hpmin=0)
         test_seq_brute(nrange=1:12, model=ViennaModel(), hpmin=3)
+    end
+
+    @testset "JET type stability" begin
+        NTS = DiffFoldRNA.NTS
+        hairpin = DiffFoldRNA.HAIRPIN
+        n = 6
+        T = Float64
+        em = All1Model{T}()
+
+        base_p_seq = fill(one(T) / NTS, n, NTS)
+        JET.@test_opt DiffFoldRNA.seqstruct_partition(base_p_seq, em; hpmin=hairpin)
+
+        p_seq = OffsetMatrix(zeros(T, n+2, NTS), 0:n+1, 1:NTS)
+        p_seq[1:n, 1:NTS] .= base_p_seq
+        p_seq[begin, begin] = one(T)
+        p_seq[end, begin] = one(T)
+
+        E = OffsetArray(zeros(T, NTS, NTS, n+2), 1:NTS, 1:NTS, 0:n+1)
+        P = OffsetArray(zeros(T, NTS, NTS, n+2, n+2), 1:NTS, 1:NTS, 0:n+1, 0:n+1)
+        ML = OffsetArray(zeros(T, NTS, NTS, NTS, NTS, 3, n+2, n+2), 1:NTS, 1:NTS, 1:NTS, 1:NTS, 0:2, 0:n+1, 0:n+1)
+        OMM = OffsetArray(zeros(T, NTS, NTS, n+2, n+2), 1:NTS, 1:NTS, 0:n+1, 0:n+1)
+
+        k = 2
+        i = 1
+        j = 5
+        bi, bj = 1, 2
+
+        JET.@test_opt DiffFoldRNA.fill_outer_mismatch!(copy(OMM), p_seq, em, k, n)
+        JET.@test_opt DiffFoldRNA.psum_bulges(T, copy(P), p_seq, em, bi, bj, i, j)
+        JET.@test_opt DiffFoldRNA.psum_internal_loops(T, copy(P), copy(OMM), p_seq, em, bi, bj, i, j)
+        JET.@test_opt DiffFoldRNA.fill_paired!(T, copy(P), copy(ML), copy(OMM), p_seq, em, i, n, hairpin)
+        JET.@test_opt DiffFoldRNA.fill_multi!(T, copy(ML), copy(P), p_seq, em, i, n)
+        JET.@test_opt DiffFoldRNA.fill_external!(T, copy(E), copy(P), p_seq, em, n, i)
     end
 end
