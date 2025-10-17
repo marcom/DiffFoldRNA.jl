@@ -13,3 +13,6 @@ julia --project=. -e 'import Pkg; Pkg.test()'
 
 # validation scripts
 julia --project=validation validation/quickcheck-all-scripts-working.jl
+
+# benchmark scripts
+julia --project=benchmarks benchmarks/bench-seqstruct-partition.jl
