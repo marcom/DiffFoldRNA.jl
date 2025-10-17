@@ -1,6 +1,6 @@
 name = "DiffFoldRNA"
 uuid = "b3722932-0f9a-41b3-9fc6-2597f1ba9f83"
-version = "0.1.1-dev"
+version = "0.2.0-dev"
 authors = ["Marco Matthies <71844+marcom@users.noreply.github.com>"]
 
 [workspace]
