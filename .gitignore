@@ -27,4 +27,4 @@ Manifest.toml
 .CondaPkg/
 
 # benchmark results
-/benchmarks/results-*.csv
+/benchmark/results-*.csv
