@@ -17,7 +17,7 @@ function main(args)
             @testset "$em" verbose=true begin
                 for n = n_start:n_end
                     @testset "$n" begin
-                        test_model_brute_vienna(em, n; atol)
+                        @time test_model_brute_vienna(em, n; atol)
                     end
                 end
             end
