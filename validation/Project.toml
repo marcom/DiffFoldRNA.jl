@@ -1,5 +1,5 @@
 [deps]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+DiffFoldRNA = "b3722932-0f9a-41b3-9fc6-2597f1ba9f83"
 
 [compat]
-Test = "1"
