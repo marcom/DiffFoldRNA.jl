@@ -12,7 +12,7 @@ function main(args)
                    time = Float64[],
                    val = Float64[])
     for em in [ViennaModel(), All1Model(), RandomModel(1)]
-        println("seqstruct_partition timings, $(nameof(typeof(em)))")
+        println("seqstruct_partition timings for: $(nameof(typeof(em)))")
         @show nrange = [20, 30, 40, 50]
         n = 15
         p_seq = ones(n,NTS)/NTS
