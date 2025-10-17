@@ -1,3 +1,6 @@
+import Pkg
+Pkg.activate(@__DIR__)
+
 using Test
 using DiffFoldRNA: test_all_1_nussinov_vienna
 

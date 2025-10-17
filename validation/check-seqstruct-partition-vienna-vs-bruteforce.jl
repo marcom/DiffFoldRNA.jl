@@ -1,3 +1,6 @@
+import Pkg
+Pkg.activate(@__DIR__)
+
 using Test
 using DiffFoldRNA: RandomModel, test_model_brute_vienna
 
