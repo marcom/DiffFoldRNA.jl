@@ -110,6 +110,231 @@ function psum_hairpin(p_seq::AbstractMatrix{Tp}, em::M,
         psum_hairpin_special_correction(p_seq, em, bi, bj, i, j)::T
 end
 
+@inline bool_to_T(::Type{T}, cond::Bool) where T = cond ? one(T) : zero(T)
+
+@inline function fill_external!(
+    ::Type{T},
+    E,
+    P,
+    p_seq,
+    em,
+    n::Integer,
+    i::Integer,
+) where {T}
+    @inbounds for bim1 in 1:NTS, bi in 1:NTS
+        sm = zero(T)
+        for bip1 in 1:NTS
+            sm += (E[bi, bip1, i+1] + bool_to_T(T, i == n)) * p_seq[i+1, bip1]
+        end
+        for j in i+1:n, bj in 1:NTS, bjp1 in 1:NTS
+            dangle5 = (i == 1) ? INVALID_BASE : bim1
+            dangle3 = (j == n) ? INVALID_BASE : bjp1
+            sm += P[bi, bj, i, j] *
+                (E[bj, bjp1, j+1] + bool_to_T(T, j == n)) *
+                en_ext_branch(em, dangle5, bi, bj, dangle3) *
+                p_seq[j, bj] *
+                p_seq[j+1, bjp1]
+        end
+        E[bim1, bi, i] = sm
+    end
+    return nothing
+end
+
+@inline function fill_multi!(
+    ::Type{T},
+    ML,
+    P,
+    p_seq,
+    em,
+    i::Integer,
+    n::Integer,
+) where {T}
+    @inbounds for bim1 in 1:NTS, bi in 1:NTS, bj in 1:NTS, bjp1 in 1:NTS, nb in 0:2, j in i:n
+        nbm1_min0 = max(0, nb-1)
+        sm = zero(T)
+        for bip1 in 1:NTS
+            sm += (ML[bi, bip1, bj, bjp1, nb, i+1, j] + bool_to_T(T, (i+1 > j) && (nb == 0))) *
+                p_seq[i+1, bip1]
+        end
+        if nb <= 1
+            sm += P[bi, bj, i, j] *
+                en_multi_branch(em, bim1, bi, bj, bjp1)
+        end
+        for bk in 1:NTS
+            if nb <= 1
+                sm += P[bi, bk, i, j-1] *
+                    en_multi_branch(em, bim1, bi, bk, bj) *
+                    p_seq[j-1, bk]
+            end
+        end
+        for k in i:j-2
+            for bk in 1:NTS, bkp1 in 1:NTS
+                sm += P[bi, bk, i, k] *
+                    ML[bk, bkp1, bj, bjp1, nbm1_min0, k+1, j] *
+                    en_multi_branch(em, bim1, bi, bk, bkp1) *
+                    p_seq[k, bk] *
+                    p_seq[k+1, bkp1]
+            end
+        end
+        ML[bim1, bi, bj, bjp1, nb, i, j] = sm
+    end
+    return nothing
+end
+
+@inline function fill_outer_mismatch!(
+    OMM,
+    p_seq,
+    em,
+    k::Integer,
+    n::Integer,
+)
+    @inbounds for l in k+1:n, bpkl in 1:NBPS
+        bk, bl = get_bp_bases(bpkl)
+        for bkm1 in 1:NTS, blp1 in 1:NTS
+            OMM[bk, bl, k, l] += en_il_outer_mismatch(em, bk, bl, bkm1, blp1) *
+                p_seq[k-1, bkm1] *
+                p_seq[l+1, blp1]
+        end
+    end
+    return nothing
+end
+
+@inline function psum_internal_loops(
+    ::Type{T},
+    P,
+    OMM,
+    p_seq,
+    em,
+    bi::Integer,
+    bj::Integer,
+    i::Integer,
+    j::Integer,
+) where {T}
+    sm = zero(T)
+    mmij = zero(T)
+    @inbounds for bip1 in 1:NTS, bjm1 in 1:NTS
+        mmij += p_seq[i+1, bip1] *
+            p_seq[j-1, bjm1] *
+            en_il_inner_mismatch(em, bi, bj, bip1, bjm1)
+    end
+    @inbounds for bpkl in 1:NBPS
+        bk, bl = get_bp_bases(bpkl)
+        for bip1 in 1:NTS, bjm1 in 1:NTS
+            pr_ij_mm = p_seq[i+1, bip1] * p_seq[j-1, bjm1]
+            sm += P[bk, bl, i+2, j-2] *
+                p_seq[i+2, bk] *
+                p_seq[j-2, bl] *
+                pr_ij_mm *
+                en_internal(em, bi, bj, bk, bl, bip1, bjm1, bip1, bjm1, 1, 1)
+            for z in i+3:j-3
+                for b in 1:NTS
+                    il_en = en_internal(em, bi, bj, bk, bl, bip1, bjm1, bip1, b, 1, j-z-1)
+                    sm += P[bk, bl, i+2, z] *
+                        p_seq[i+2, bk] *
+                        p_seq[z, bl] *
+                        p_seq[z+1, b] *
+                        pr_ij_mm *
+                        il_en
+                    il_en = en_internal(em, bi, bj, bk, bl, bip1, bjm1, b, bjm1, z-i-1, 1)
+                    sm += P[bk, bl, z, j-2] *
+                        p_seq[z, bk] *
+                        p_seq[j-2, bl] *
+                        p_seq[z-1, b] *
+                        pr_ij_mm *
+                        il_en
+                end
+            end
+        end
+        for k in i+2:j-3, l in k+1:j-2
+            lup, rup = k-i-1, j-l-1
+            if (lup <= 1) || (rup <= 1)
+                continue
+            end
+            if (lup == 2 && rup == 2) || (lup == 2 && rup == 3) || (lup == 3 && rup == 2)
+                for bip1 in 1:NTS, bjm1 in 1:NTS, bkm1 in 1:NTS, blp1 in 1:NTS
+                    sm += P[bk, bl, k, l] *
+                        p_seq[k, bk] *
+                        p_seq[l, bl] *
+                        en_internal(em, bi, bj, bk, bl, bip1, bjm1, bkm1, blp1, lup, rup) *
+                        p_seq[k-1, bkm1] *
+                        p_seq[l+1, blp1] *
+                        p_seq[i+1, bip1] *
+                        p_seq[j-1, bjm1]
+                end
+            else
+                init_and_pair = en_internal_init(em, lup+rup) *
+                    en_internal_asym(em, abs(lup-rup)) *
+                    P[bk, bl, k, l] *
+                    p_seq[k, bk] *
+                    p_seq[l, bl]
+                sm += OMM[bk, bl, k, l] * mmij * init_and_pair
+            end
+        end
+    end
+    return sm
+end
+
+@inline function psum_bulges(
+    ::Type{T},
+    P,
+    p_seq,
+    em,
+    bi::Integer,
+    bj::Integer,
+    i::Integer,
+    j::Integer,
+) where {T}
+    sm = zero(T)
+    @inbounds for bpkl in 1:NBPS
+        bk, bl = get_bp_bases(bpkl)
+        for kl in i+2:j-2
+            sm += P[bk, bl, i+1, kl] *
+                p_seq[i+1, bk] *
+                p_seq[kl, bl] *
+                en_bulge(em, bi, bj, bk, bl, j-kl-1)
+            sm += P[bk, bl, kl, j-1] *
+                p_seq[kl, bk] *
+                p_seq[j-1, bl] *
+                en_bulge(em, bi, bj, bk, bl, kl-i-1)
+        end
+    end
+    return sm
+end
+
+@inline function fill_paired!(
+    ::Type{T},
+    P,
+    ML,
+    OMM,
+    p_seq,
+    em,
+    i::Integer,
+    n::Integer,
+    hairpin_min::Integer,
+) where {T}
+    @inbounds for bpij in 1:NBPS, j in i+hairpin_min+1:n
+        bi, bj = get_bp_bases(bpij)
+        sm = psum_hairpin(p_seq, em, bi, bj, i, j)::T
+        sm += psum_bulges(T, P, p_seq, em, bi, bj, i, j)
+        sm += psum_internal_loops(T, P, OMM, p_seq, em, bi, bj, i, j)
+        for bpkl in 1:NBPS
+            bk, bl = get_bp_bases(bpkl)
+            sm += P[bk, bl, i+1, j-1] *
+                p_seq[i+1, bk] *
+                p_seq[j-1, bl] *
+                en_stack(em, bi, bj, bk, bl)
+        end
+        for bip1 in 1:NTS, bjm1 in 1:NTS
+            sm += ML[bi, bip1, bjm1, bj, 2, i+1, j-1] *
+                p_seq[i+1, bip1] *
+                p_seq[j-1, bjm1] *
+                en_multi_closing(em, bi, bip1, bjm1, bj)
+        end
+        P[bi, bj, i, j] = sm
+    end
+    return nothing
+end
+
 
 function seq_partition(p_seq::AbstractMatrix{Tp}, dbn::AbstractString,
                        em::M) where {Tp,Te,M<:AbstractModel{Te}}
