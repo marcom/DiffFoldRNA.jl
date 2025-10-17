@@ -6,6 +6,7 @@ showtestset() = println(" "^(2 * Test.get_testset_depth()), "testing ",
 
 @testset "DiffFoldRNA" verbose=true begin
     showtestset()
+    include("aqua.jl")
     include("common.jl")
     include("brute_force.jl")
     include("energy.jl")

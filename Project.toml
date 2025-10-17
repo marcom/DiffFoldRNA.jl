@@ -7,8 +7,6 @@ authors = ["Marco Matthies <71844+marcom@users.noreply.github.com>"]
 projects = ["test", "validation", "benchmarks"]
 
 [deps]
-ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
-CondaPkg = "992eb4ea-22a4-4c89-a5bb-47a3300528ab"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 FoldRNA = "c54b6bf2-3650-4185-8b5f-4b1290dd1f68"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
@@ -25,15 +23,15 @@ UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"
 ViennaRNA = "05a721ad-238d-4945-8c85-8b5c1fff3465"
 
 [compat]
-ArgParse = "1.1"
-CondaPkg = "0.2"
 DataFrames = "1.5"
 FoldRNA = "0.1, 0.2"
 ForwardDiff = "0.10, 1"
+LinearAlgebra = "1.12"
 LogExpFunctions = "0.3"
 OffsetArrays = "1.12"
 Optim = "1.7"
 ProgressMeter = "1.7"
+Random = "1"
 StaticArrays = "1.5"
 Statistics = "1.9"
 Test = "1.11.0"
