@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Quick test that everything is runnable
+
 set -o errexit
 set -o nounset
 
@@ -11,6 +13,3 @@ julia --project=. -e 'import Pkg; Pkg.test()'
 
 # validation scripts
 julia --project=validation validation/quickcheck-all-scripts-working.jl
-#julia --project=validation validation/check-seqstruct-partition-All1Model-vienna-vs-nussinov.jl
-#julia --project=validation validation/check-seqstruct-partition-nussinov-vs-bruteforce.jl
-#julia --project=validation validation/check-seqstruct-partition-vienna-vs-bruteforce.jl
