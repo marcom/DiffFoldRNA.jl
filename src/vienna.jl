@@ -10,55 +10,54 @@
 using OffsetArrays
 
 # bptype -> (basetype, basetype)
-# TODO: this can be more efficient with a direct lookup
-function get_bp_bases(bp::Integer)
-    bt1, bt2 = ALL_PAIRS[bp]
-    return (findfirst(bt1, RNA_ALPHA), findfirst(bt2, RNA_ALPHA))
-end
+@inline get_bp_bases(bp::Integer) = ALL_PAIRS_TO_BASETYPES[bp]
 
 # NOTE: python indexing starts at 0, so we use OffsetArrays to use the
 # same indexing
 
-function psum_hairpin_not_special(p_seq::AbstractMatrix{T}, em::AbstractModel,
-                                  bi::Integer, bj::Integer, i::Integer, j::Integer) where T
+function psum_hairpin_not_special(p_seq::AbstractMatrix{Tp}, em::M,
+                                  bi::Integer, bj::Integer, i::Integer, j::Integer) where {Tp,Te,M<:AbstractModel{Te}}
+    T = promote_type(Tp,Te)
     # Special case for HAIRPIN<=1
     # Necessary to respect conditional probability of the mismatch
     # Can be removed or made branchless/jax.where
     if i + 1 == j
-        return en_hairpin_not_special(em, bi, bj, bj, bi, 0)
+        return en_hairpin_not_special(em, bi, bj, bj, bi, 0)::T
     end
-    sm = zero(T)
+    sm = zero(T)::T
     if i+1 == j-1
         @inbounds for bip1 in 1:NTS
             sm += p_seq[i+1, bip1] *
                 en_hairpin_not_special(em, bi, bj, bip1, bip1, 1)
         end
-        return sm
+        return sm::T
     end
     @inbounds for bip1 in 1:NTS, bjm1 in 1:NTS
         sm += p_seq[i+1, bip1] * p_seq[j-1, bjm1] *
             en_hairpin_not_special(em, bi, bj, bip1, bjm1, j-i-1)
     end
-    return sm
+    return sm::T
 end
 
-function pr_special_hairpin(p_seq::AbstractMatrix{T}, em::AbstractModel,
-                            id::Integer, i::Integer, j::Integer) where T
+function pr_special_hairpin(p_seq::AbstractMatrix{Tp}, em::M,
+                            id::Integer, i::Integer, j::Integer) where {Tp,Te,M<:AbstractModel{Te}}
+    T = promote_type(Tp, Te)
     SPECIAL_HAIRPINS = specialhairpins(em)
     pr = one(T)
     @inbounds for k in i+1:j-1
         # TODO: can be replaced with a table
         # TODO: changed k-i => k-i+1 (julia 1-based indexing)
         # Note: SPECIAL_HAIRPINS second index ∈ (2:j-i), length j-i-1
-        pr *= p_seq[k, findfirst(SPECIAL_HAIRPINS[id][k-i+1], RNA_ALPHA)]
+        pr *= p_seq[k, findfirst(SPECIAL_HAIRPINS[id][k-i+1], RNA_ALPHA)::Int]
     end
-    return pr
+    return pr::T
 end
 
-function psum_hairpin_special(p_seq::AbstractMatrix{T}, em::AbstractModel,
-                              bi::Integer, bj::Integer, i::Integer, j::Integer) where T
+function psum_hairpin_special(p_seq::AbstractMatrix{Tp}, em::M,
+                              bi::Integer, bj::Integer, i::Integer, j::Integer) where {Tp,Te,M<:AbstractModel{Te}}
+    T = promote_type(Tp, Te)
     SPECIAL_HAIRPINS = specialhairpins(em)
-    sm = zero(T)
+    sm = zero(T)::T
     @inbounds for id in LinearIndices(SPECIAL_HAIRPINS)
         # Can be made branchless
         if SPECIAL_HAIRPINS[id][begin] != RNA_ALPHA[bi]
@@ -67,18 +66,19 @@ function psum_hairpin_special(p_seq::AbstractMatrix{T}, em::AbstractModel,
         if SPECIAL_HAIRPINS[id][end] != RNA_ALPHA[bj]
             continue
         end
-        if length(SPECIAL_HAIRPINS[id]) != j-i+1
+        if length(SPECIAL_HAIRPINS[id]) != j - i + 1
             continue
         end
         sm += pr_special_hairpin(p_seq, em, id, i, j) * en_hairpin_special(em, id)
     end
-    return sm
+    return sm::T
 end
 
-function psum_hairpin_special_correction(p_seq::AbstractMatrix{T}, em::AbstractModel,
-                                         bi::Integer, bj::Integer, i::Integer, j::Integer) where T
+function psum_hairpin_special_correction(p_seq::AbstractMatrix{Tp}, em::M,
+                                         bi::Integer, bj::Integer, i::Integer, j::Integer) where {Tp,Te,M<:AbstractModel{Te}}
+    T = promote_type(Tp, Te)
     SPECIAL_HAIRPINS = specialhairpins(em)
-    sm = zero(T)
+    sm = zero(T)::T
     @inbounds for id in LinearIndices(SPECIAL_HAIRPINS)
         # Can be made branchless
         if SPECIAL_HAIRPINS[id][begin] != RNA_ALPHA[bi]
@@ -93,25 +93,26 @@ function psum_hairpin_special_correction(p_seq::AbstractMatrix{T}, em::AbstractM
         # TODO: can be replace with a table
         # TODO: assumes length(SPECIAL_HAIRPINS[id]) >= 2, which should always be the case
         #       move this test to beginning of ss_partition
-        bip1 = findfirst(SPECIAL_HAIRPINS[id][begin+1], RNA_ALPHA)
-        bjm1 = findfirst(SPECIAL_HAIRPINS[id][end-1], RNA_ALPHA)
+        bip1 = findfirst(SPECIAL_HAIRPINS[id][begin+1], RNA_ALPHA)::Int
+        bjm1 = findfirst(SPECIAL_HAIRPINS[id][end-1], RNA_ALPHA)::Int
         sm += pr_special_hairpin(p_seq, em, id, i, j) *
             en_hairpin_not_special(em, bi, bj, bip1, bjm1, length(SPECIAL_HAIRPINS[id])-2)
     end
-    return sm
+    return sm::T
 end
 
 # This can be precomputed
-function psum_hairpin(p_seq::AbstractMatrix, em::AbstractModel,
-                      bi::Integer, bj::Integer, i::Integer, j::Integer)
-    return psum_hairpin_not_special(p_seq, em, bi, bj, i, j) +
-        psum_hairpin_special(p_seq, em, bi, bj, i, j) -
-        psum_hairpin_special_correction(p_seq, em, bi, bj, i, j)
+function psum_hairpin(p_seq::AbstractMatrix{Tp}, em::M,
+                      bi::Integer, bj::Integer, i::Integer, j::Integer) where {Tp,Te,M<:AbstractModel{Te}}
+    T = promote_type(Tp, Te)
+    return psum_hairpin_not_special(p_seq, em, bi, bj, i, j)::T +
+        psum_hairpin_special(p_seq, em, bi, bj, i, j)::T -
+        psum_hairpin_special_correction(p_seq, em, bi, bj, i, j)::T
 end
 
 
 function seq_partition(p_seq::AbstractMatrix{Tp}, dbn::AbstractString,
-                       em::AbstractModel{Te}) where {Tp,Te}
+                       em::M) where {Tp,Te,M<:AbstractModel{Te}}
     # Very cheesy hack to get a fast(er) O(N^2) sequence partition function
     # Linear time is possible
     n = length(dbn)
@@ -163,6 +164,8 @@ function seq_partition(p_seq::AbstractMatrix{Tp}, dbn::AbstractString,
     OMM = OffsetArray(zeros(Tp, NTS, NTS, n+2, n+2), 1:NTS, 1:NTS, 0:n+1, 0:n+1)
 
     # TODO: check again
+    @inline bool_to_Te(cond::Bool) = cond ? one(Te) : zero(Te)
+
     function fill_external(i::Integer)
         for bim1 in 1:NTS, bi in 1:NTS
             sm = zero(Te)
@@ -170,14 +173,14 @@ function seq_partition(p_seq::AbstractMatrix{Tp}, dbn::AbstractString,
             if j == i
                 for bip1 in 1:NTS
                     # TODO: this assumes +(::Te, ::Bool) exists
-                    sm += (E[bi, bip1, i+1] + (i == n)) * p_seq[i+1, bip1]
+                    sm += (E[bi, bip1, i+1] + bool_to_Te(i == n)) * p_seq[i+1, bip1]
                 end
             else
                 for bj in 1:NTS, bjp1 in 1:NTS  # j in i+1:n
                     # These can be where instead. Currently branchless arithmetic.
                     dangle5 = (i == 1)*INVALID_BASE + (i != 1)*bim1
                     dangle3 = (j == n)*INVALID_BASE + (j != n)*bjp1
-                    sm += P[bi, bj, i, j] * (E[bj, bjp1, j+1] + (j == n)) *
+                    sm += P[bi, bj, i, j] * (E[bj, bjp1, j+1] + bool_to_Te(j == n)) *
                         en_ext_branch(em, dangle5, bi, bj, dangle3) *
                         p_seq[j, bj] * p_seq[j+1, bjp1]
                 end
@@ -197,18 +200,22 @@ function seq_partition(p_seq::AbstractMatrix{Tp}, dbn::AbstractString,
             # Replace if/elif/else with where
             if k == i
                 for bip1 in 1:NTS
-                    sm += (ML[bi, bip1, bj, bjp1, nb, i+1, j] + (i+1 > j && nb == 0)) *
+                    sm += (ML[bi, bip1, bj, bjp1, nb, i+1, j] + bool_to_Te(i+1 > j && nb == 0)) *
                         p_seq[i+1, bip1]
                 end
             elseif k == j
                 # Special case for k==j
-                sm += P[bi, bj, i, j] * (nb <= 1) *
-                    en_multi_branch(em, bim1, bi, bj, bjp1)
+                if nb <= 1
+                    sm += P[bi, bj, i, j] *
+                        en_multi_branch(em, bim1, bi, bj, bjp1)
+                end
             elseif k == j-1
                 for bk in 1:NTS
                     # Special case for k==j-1
-                    sm += P[bi, bk, i, j-1] * (nb <= 1) *
-                        en_multi_branch(em, bim1, bi, bk, bj) * p_seq[j-1, bk]
+                    if nb <= 1
+                        sm += P[bi, bk, i, j-1] *
+                            en_multi_branch(em, bim1, bi, bk, bj) * p_seq[j-1, bk]
+                    end
                 end
             else
                 for bk in 1:NTS, bkp1 in 1:NTS
@@ -288,7 +295,7 @@ function seq_partition(p_seq::AbstractMatrix{Tp}, dbn::AbstractString,
                 if ! actually_paired
                     l = j-1
                 end
-                res = zero(Te)
+                res = zero(Te)::Te
                 lup, rup = k-i-1, j-l-1
 
                 # TODO: Special cases. Can be replaced with wheres
@@ -393,7 +400,8 @@ function seq_partition(p_seq::AbstractMatrix{Tp}, dbn::AbstractString,
     return sm
 end
 
-function seqstruct_partition(p_seq::AbstractMatrix{T}, em::AbstractModel; hpmin::Int=HAIRPIN) where {T}
+function seqstruct_partition(p_seq::AbstractMatrix{Tp}, em::M; hpmin::Int=HAIRPIN) where {Tp,Te,M<:AbstractModel{Te}}
+    T = promote_type(Tp, Te)
     HAIRPIN = hpmin
     n = size(p_seq, 1)
     n > 0 || error("size(p_seq,1) == 0")
@@ -406,10 +414,10 @@ function seqstruct_partition(p_seq::AbstractMatrix{T}, em::AbstractModel; hpmin:
     # "last array index"). We recreate this indexing with a
     # OffsetMatrix, but ONLY FOR THE FIRST INDEX, i.e. index `i` in
     # p_seq[i, j].
-    p_padded = OffsetMatrix(zeros(T, n+2, NTS), 0:n+1, 1:NTS) # TODO: indices 0:n+1, 1:NTS
+    p_padded = OffsetMatrix(zeros(Tp, n+2, NTS), 0:n+1, 1:NTS) # TODO: indices 0:n+1, 1:NTS
     p_padded[1:n, 1:NTS] .= p_seq
-    p_padded[begin, begin] = one(T)
-    p_padded[end, begin] = one(T)
+    p_padded[begin, begin] = one(Tp)
+    p_padded[end, begin] = one(Tp)
     p_seq = p_padded
 
     # NOTE: NTS indices are 1:NTS, sequence indices are 0:n+1
@@ -422,19 +430,21 @@ function seqstruct_partition(p_seq::AbstractMatrix{T}, em::AbstractModel; hpmin:
     ML = OffsetArray(zeros(T, NTS, NTS, NTS, NTS, 3, n+2, n+2), 1:NTS, 1:NTS, 1:NTS, 1:NTS, 0:2, 0:n+1, 0:n+1)
     OMM = OffsetArray(zeros(T, NTS, NTS, n+2, n+2), 1:NTS, 1:NTS, 0:n+1, 0:n+1)
 
+    @inline bool_to_T(cond::Bool) = cond ? one(T) : zero(T)
+
     function fill_external(i::Integer)
         for bim1 in 1:NTS, bi in 1:NTS
-            sm = zero(T)
+            sm = zero(T)::T
             for bip1 in 1:NTS
                 # TODO: this assumes +(::Te, ::Bool) exists
-                sm += (E[bi, bip1, i+1] + (i == n)) * p_seq[i+1, bip1]
+                sm += (E[bi, bip1, i+1] + bool_to_T(i == n)) * p_seq[i+1, bip1]
             end
             # TODO: was range(i+1, n+1)
             for j in i+1:n, bj in 1:NTS, bjp1 in 1:NTS
                 # These can be where instead. Currently branchless arithmetic.
                 dangle5 = (i == 1)*INVALID_BASE + (i != 1)*bim1
                 dangle3 = (j == n)*INVALID_BASE + (j != n)*bjp1
-                sm += P[bi, bj, i, j] * (E[bj, bjp1, j+1] + (j == n)) *
+                sm += P[bi, bj, i, j] * (E[bj, bjp1, j+1] + bool_to_T(j == n)) *
                     en_ext_branch(em, dangle5, bi, bj, dangle3) *
                     p_seq[j, bj] * p_seq[j+1, bjp1]
             end
@@ -448,18 +458,22 @@ function seqstruct_partition(p_seq::AbstractMatrix{T}, em::AbstractModel; hpmin:
         @inbounds for bim1 in 1:NTS, bi in 1:NTS, bj in 1:NTS, bjp1 in 1:NTS, nb in 0:2, j in i:n
             # The max function can be made branchless
             nbm1_min0 = max(0, nb-1)
-            sm = zero(T)
+            sm = zero(T)::T
             for bip1 in 1:NTS
-                sm += (ML[bi, bip1, bj, bjp1, nb, i+1, j] + (i+1 > j && nb == 0)) *
+                sm += (ML[bi, bip1, bj, bjp1, nb, i+1, j] + bool_to_T(i+1 > j && nb == 0)) *
                     p_seq[i+1, bip1]
             end
             # Special case for k==j
-            sm += P[bi, bj, i, j] * (nb <= 1) *
-                en_multi_branch(em, bim1, bi, bj, bjp1)
+            if nb <= 1
+                sm += P[bi, bj, i, j] *
+                    en_multi_branch(em, bim1, bi, bj, bjp1)
+            end
             for bk in 1:NTS
                 # Special case for k==j-1
-                sm += P[bi, bk, i, j-1] * (nb <= 1) *
-                    en_multi_branch(em, bim1, bi, bk, bj) * p_seq[j-1, bk]
+                if nb <= 1
+                    sm += P[bi, bk, i, j-1] *
+                        en_multi_branch(em, bim1, bi, bk, bj) * p_seq[j-1, bk]
+                end
             end
             # TODO old: range(i, j-1):
             for k in i:j-2
@@ -491,8 +505,8 @@ function seqstruct_partition(p_seq::AbstractMatrix{T}, em::AbstractModel; hpmin:
     end
 
     function psum_internal_loops(bi::Integer, bj::Integer, i::Integer, j::Integer)
-        sm = zero(T)
-        mmij = zero(T)
+        sm = zero(T)::T
+        mmij = zero(T)::T
         @inbounds for bip1 in 1:NTS, bjm1 in 1:NTS
             mmij += p_seq[i+1, bip1] *
                 p_seq[j-1, bjm1] *
@@ -569,7 +583,7 @@ function seqstruct_partition(p_seq::AbstractMatrix{T}, em::AbstractModel; hpmin:
     end
 
     function psum_bulges(bi::Integer, bj::Integer, i::Integer, j::Integer)
-        sm = zero(T)
+        sm = zero(T)::T
         @inbounds for bpkl in 1:NBPS
             bk, bl = get_bp_bases(bpkl)
             for kl in i+2:j-2  # TODO was: range(i+2, j-1):
@@ -620,7 +634,7 @@ function seqstruct_partition(p_seq::AbstractMatrix{T}, em::AbstractModel; hpmin:
         fill_external(i)
     end
 
-    sm = zero(T)
+    sm = zero(T)::T
     for bim1 in 1:NTS, bi in 1:NTS
         sm += E[bim1, bi, 1] * p_seq[1, bi] * p_seq[0, bim1]
     end

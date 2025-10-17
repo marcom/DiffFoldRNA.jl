@@ -15,6 +15,9 @@ const INVALID_BASE = length(RNA_ALPHA) + 2
 
 const NTS = length(RNA_ALPHA)
 const ALL_PAIRS = ["AU", "UA", "GC", "CG", "GU", "UG"]
+const ALL_PAIRS_TO_BASETYPES = [
+    (findfirst(b1, RNA_ALPHA), findfirst(b2, RNA_ALPHA))::Tuple{Int,Int} for (b1, b2) in ALL_PAIRS
+]
 const NBPS = length(ALL_PAIRS)
 const HAIRPIN = 0
 const SPECIAL_HAIRPINS = ["CAACG", "GUUAC"]  # Not complete

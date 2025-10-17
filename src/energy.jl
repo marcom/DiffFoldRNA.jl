@@ -538,7 +538,7 @@ function boltz(seq::AbstractString, dbn::AbstractString, em::AbstractModel{T}) w
     # Note: formerly called `calculate`
     n = length(dbn)
     length(seq) == n || throw(ArgumentError("seq and dbn must have same length ($(length(seq)) != $n)"))
-    b_idx(i) = (i <= 0 || i >= n+1) ? INVALID_BASE : findfirst(seq[i], RNA_ALPHA)
+    b_idx(i) = (i <= 0 || i >= n+1) ? INVALID_BASE : findfirst(seq[i], RNA_ALPHA)::Int
     ch, right = structure_tree(dbn)
     SPECIAL_HAIRPINS = specialhairpins(em)
 
@@ -555,7 +555,7 @@ function boltz(seq::AbstractString, dbn::AbstractString, em::AbstractModel{T}) w
             s = seq[atl:right[atl]]  # TODO was: seq[atl:right[atl]+1]
             return if s in SPECIAL_HAIRPINS
                 # TODO: inefficient lookup (findfirst)
-                idx = findfirst(x -> x == s, SPECIAL_HAIRPINS)
+                idx = findfirst(x -> x == s, SPECIAL_HAIRPINS)::Int
                 en_hairpin_special(em, idx)
             else
                 en_hairpin_not_special(em, b_idx(atl), b_idx(right[atl]), b_idx(atl+1),
