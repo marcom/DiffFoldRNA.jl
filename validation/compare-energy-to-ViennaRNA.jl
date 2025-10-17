@@ -1,3 +1,6 @@
+import Pkg
+Pkg.activate(@__DIR__)
+
 using Test
 using DiffFoldRNA: AllStructs, RNA_ALPHA, ViennaModel, boltz, count_structures, get_nth, matching_to_dbn
 using ArgParse, CSV, DataFrames, Unitful, ProgressMeter, Random
