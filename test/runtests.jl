@@ -13,4 +13,5 @@ showtestset() = println(" "^(2 * Test.get_testset_depth()), "testing ",
     include("nussinov.jl")
     include("sampling.jl")
     include("vienna.jl")
+    include("autodiff-forward.jl")
 end
