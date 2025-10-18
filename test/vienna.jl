@@ -99,10 +99,10 @@ using DiffFoldRNA: test_all_1_nussinov_vienna, test_model_brute_vienna,
         bi, bj = 1, 2
 
         JET.@test_opt DiffFoldRNA.fill_outer_mismatch!(copy(OMM), p_seq, em, k, n)
-        JET.@test_opt DiffFoldRNA.psum_bulges(T, copy(P), p_seq, em, bi, bj, i, j)
-        JET.@test_opt DiffFoldRNA.psum_internal_loops(T, copy(P), copy(OMM), p_seq, em, bi, bj, i, j)
-        JET.@test_opt DiffFoldRNA.fill_paired!(T, copy(P), copy(ML), copy(OMM), p_seq, em, i, n, hairpin)
-        JET.@test_opt DiffFoldRNA.fill_multi!(T, copy(ML), copy(P), p_seq, em, i, n)
-        JET.@test_opt DiffFoldRNA.fill_external!(T, copy(E), copy(P), p_seq, em, n, i)
+        JET.@test_opt DiffFoldRNA.psum_bulges(copy(P), p_seq, em, bi, bj, i, j)
+        JET.@test_opt DiffFoldRNA.psum_internal_loops(copy(P), copy(OMM), p_seq, em, bi, bj, i, j)
+        JET.@test_opt DiffFoldRNA.fill_paired!(copy(P), copy(ML), copy(OMM), p_seq, em, i, n, hairpin)
+        JET.@test_opt DiffFoldRNA.fill_multi!(copy(ML), copy(P), p_seq, em, i, n)
+        JET.@test_opt DiffFoldRNA.fill_external!(copy(E), copy(P), p_seq, em, n, i)
     end
 end

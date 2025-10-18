@@ -181,35 +181,35 @@ function helper_cases!(rows, ::Type{T}, n::Int,
         benchmark_helper_case!(rows, "fill_outer_mismatch!", mode_label, n, elty, model_name, bench_outer)
 
         # psum_bulges
-        bench_bulges = @benchmarkable DiffFoldRNA.psum_bulges($elty, P, p_seq, $model, $bi, $bj, $i, $j) setup = begin
+        bench_bulges = @benchmarkable DiffFoldRNA.psum_bulges(P, p_seq, $model, $bi, $bj, $i, $j) setup = begin
             st = prepare_dp_state($source_matrix, $elty)
             (p_seq, E, P, ML, OMM) = (st.p_seq, st.E, st.P, st.ML, st.OMM)
         end evals = 1
         benchmark_helper_case!(rows, "psum_bulges", mode_label, n, elty, model_name, bench_bulges)
 
         # psum_internal_loops
-        bench_internal = @benchmarkable DiffFoldRNA.psum_internal_loops($elty, P, OMM, p_seq, $model, $bi, $bj, $i, $j) setup = begin
+        bench_internal = @benchmarkable DiffFoldRNA.psum_internal_loops(P, OMM, p_seq, $model, $bi, $bj, $i, $j) setup = begin
             st = prepare_dp_state($source_matrix, $elty)
             (p_seq, E, P, ML, OMM) = (st.p_seq, st.E, st.P, st.ML, st.OMM)
         end evals = 1
         benchmark_helper_case!(rows, "psum_internal_loops", mode_label, n, elty, model_name, bench_internal)
 
         # fill_paired!
-        bench_paired = @benchmarkable DiffFoldRNA.fill_paired!($elty, P, ML, OMM, p_seq, $model, $i, $n, DiffFoldRNA.HAIRPIN) setup = begin
+        bench_paired = @benchmarkable DiffFoldRNA.fill_paired!(P, ML, OMM, p_seq, $model, $i, $n, DiffFoldRNA.HAIRPIN) setup = begin
             st = prepare_dp_state($source_matrix, $elty)
             (p_seq, E, P, ML, OMM) = (st.p_seq, st.E, st.P, st.ML, st.OMM)
         end evals = 1
         benchmark_helper_case!(rows, "fill_paired!", mode_label, n, elty, model_name, bench_paired)
 
         # fill_multi!
-        bench_multi = @benchmarkable DiffFoldRNA.fill_multi!($elty, ML, P, p_seq, $model, $i, $n) setup = begin
+        bench_multi = @benchmarkable DiffFoldRNA.fill_multi!(ML, P, p_seq, $model, $i, $n) setup = begin
             st = prepare_dp_state($source_matrix, $elty)
             (p_seq, E, P, ML, OMM) = (st.p_seq, st.E, st.P, st.ML, st.OMM)
         end evals = 1
         benchmark_helper_case!(rows, "fill_multi!", mode_label, n, elty, model_name, bench_multi)
 
         # fill_external!
-        bench_external = @benchmarkable DiffFoldRNA.fill_external!($elty, E, P, p_seq, $model, $n, $i) setup = begin
+        bench_external = @benchmarkable DiffFoldRNA.fill_external!(E, P, p_seq, $model, $n, $i) setup = begin
             st = prepare_dp_state($source_matrix, $elty)
             (p_seq, E, P, ML, OMM) = (st.p_seq, st.E, st.P, st.ML, st.OMM)
         end evals = 1

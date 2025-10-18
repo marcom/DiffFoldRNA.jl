@@ -113,14 +113,13 @@ end
 @inline bool_to_T(::Type{T}, cond::Bool) where T = cond ? one(T) : zero(T)
 
 @inline function fill_external!(
-    ::Type{T},
-    E,
-    P,
-    p_seq,
-    em,
+    E::AbstractArray{T},
+    P::AbstractArray{T},
+    p_seq::AbstractMatrix{Tp},
+    em::AbstractModel,
     n::Integer,
     i::Integer,
-) where {T}
+) where {T, Tp}
     @inbounds for bim1 in 1:NTS, bi in 1:NTS
         sm = zero(T)
         for bip1 in 1:NTS
@@ -141,14 +140,13 @@ end
 end
 
 @inline function fill_multi!(
-    ::Type{T},
-    ML,
-    P,
-    p_seq,
-    em,
+    ML::AbstractArray{T},
+    P::AbstractArray{T},
+    p_seq::AbstractMatrix{Tp},
+    em::AbstractModel,
     i::Integer,
     n::Integer,
-) where {T}
+) where {T,Tp}
     @inbounds for bim1 in 1:NTS, bi in 1:NTS, bj in 1:NTS, bjp1 in 1:NTS, nb in 0:2, j in i:n
         nbm1_min0 = max(0, nb-1)
         sm = zero(T)
@@ -182,12 +180,12 @@ end
 end
 
 @inline function fill_outer_mismatch!(
-    OMM,
-    p_seq,
-    em,
+    OMM::AbstractArray{T},
+    p_seq::AbstractMatrix{Tp},
+    em::AbstractModel,
     k::Integer,
     n::Integer,
-)
+) where {T,Tp}
     @inbounds for l in k+1:n, bpkl in 1:NBPS
         bk, bl = get_bp_bases(bpkl)
         for bkm1 in 1:NTS, blp1 in 1:NTS
@@ -200,16 +198,15 @@ end
 end
 
 @inline function psum_internal_loops(
-    ::Type{T},
-    P,
-    OMM,
-    p_seq,
-    em,
+    P::AbstractArray{T},
+    OMM::AbstractArray{T},
+    p_seq::AbstractMatrix{Tp},
+    em::AbstractModel,
     bi::Integer,
     bj::Integer,
     i::Integer,
     j::Integer,
-) where {T}
+) where {T,Tp}
     sm = zero(T)
     mmij = zero(T)
     @inbounds for bip1 in 1:NTS, bjm1 in 1:NTS
@@ -275,15 +272,14 @@ end
 end
 
 @inline function psum_bulges(
-    ::Type{T},
-    P,
-    p_seq,
-    em,
+    P::AbstractArray{T},
+    p_seq::AbstractMatrix{Tp},
+    em::AbstractModel,
     bi::Integer,
     bj::Integer,
     i::Integer,
     j::Integer,
-) where {T}
+) where {T,Tp}
     sm = zero(T)
     @inbounds for bpkl in 1:NBPS
         bk, bl = get_bp_bases(bpkl)
@@ -302,21 +298,20 @@ end
 end
 
 @inline function fill_paired!(
-    ::Type{T},
-    P,
-    ML,
-    OMM,
-    p_seq,
-    em,
+    P::AbstractArray{T},
+    ML::AbstractArray{T},
+    OMM::AbstractArray{T},
+    p_seq::AbstractMatrix{Tp},
+    em::AbstractModel,
     i::Integer,
     n::Integer,
     hairpin_min::Integer,
-) where {T}
+) where {T,Tp}
     @inbounds for bpij in 1:NBPS, j in i+hairpin_min+1:n
         bi, bj = get_bp_bases(bpij)
         sm = psum_hairpin(p_seq, em, bi, bj, i, j)::T
-        sm += psum_bulges(T, P, p_seq, em, bi, bj, i, j)
-        sm += psum_internal_loops(T, P, OMM, p_seq, em, bi, bj, i, j)
+        sm += psum_bulges(P, p_seq, em, bi, bj, i, j)
+        sm += psum_internal_loops(P, OMM, p_seq, em, bi, bj, i, j)
         for bpkl in 1:NBPS
             bk, bl = get_bp_bases(bpkl)
             sm += P[bk, bl, i+1, j-1] *
@@ -657,9 +652,9 @@ function seqstruct_partition(p_seq::AbstractMatrix{Tp}, em::M; hpmin::Int=HAIRPI
 
     for i in n:-1:1
         fill_outer_mismatch!(OMM, p_seq, em, i, n)
-        fill_paired!(T, P, ML, OMM, p_seq, em, i, n, HAIRPIN)
-        fill_multi!(T, ML, P, p_seq, em, i, n)
-        fill_external!(T, E, P, p_seq, em, n, i)
+        fill_paired!(P, ML, OMM, p_seq, em, i, n, HAIRPIN)
+        fill_multi!(ML, P, p_seq, em, i, n)
+        fill_external!(E, P, p_seq, em, n, i)
     end
 
     sm = zero(T)::T
