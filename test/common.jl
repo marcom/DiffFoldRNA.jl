@@ -1,7 +1,9 @@
 using Test
-using DiffFoldRNA: RNA_ALPHA, ALL_PAIRS, NTS, one_hot_seq, valid_pair, is_valid_dbn,
-    matching_to_dbn, dbn_to_matching, random_primary, random_seq_for_dbn, seq_prob, structure_tree,
-    random_p_seq, normalize_to_p_seq, normalize_to_p_seq!
+using DiffFoldRNA: RNA_ALPHA, ALL_PAIRS, NTS, one_hot_seq, valid_pair,
+    is_valid_dbn, matching_to_dbn, dbn_to_matching, random_primary,
+    random_seq_for_dbn, seq_prob, structure_tree, structure_tree_full,
+    structure_list_postorder, random_p_seq, normalize_to_p_seq,
+    normalize_to_p_seq!
 
 const MATCH_DBN = [
     [2, 1, 3] => "().",
@@ -95,16 +97,64 @@ const MATCH_DBN = [
 
     @testset "structure_tree" begin
         for (dbn, res) in [
-            ""                => (Dict(-1 => Int[]), Int[]),
-            "()"              => (Dict(-1 => [1]), [2, -1]),
-            ".()"             => (Dict(-1 => [2]), [-1, 3, -1]),
-            "(.)"             => (Dict(-1 => [1]), [3, -1, -1]),
-            "()()"            => (Dict(-1 => [1, 3]), [2, -1, 4, -1]),
-            "(()())"          => (Dict(-1 => [1], 1 => [2, 4]), [6, 3, -1, 5, -1, -1]),
+            ""                => (Dict(-1 => Int[]),
+                                  Int[]),
+            "()"              => (Dict(-1 => [1]),
+                                  [2, -1]),
+            ".()"             => (Dict(-1 => [2]),
+                                  [-1, 3, -1]),
+            "(.)"             => (Dict(-1 => [1]),
+                                  [3, -1, -1]),
+            "()()"            => (Dict(-1 => [1, 3]),
+                                  [2, -1, 4, -1]),
+            "(()())"          => (Dict(-1 => [1], 1 => [2, 4]),
+                                  [6, 3, -1, 5, -1, -1]),
             "...(.(.)(.)..)." => (Dict(-1 => [4], 4 => [6, 9]),
                                   [-1, -1, -1, 14, -1, 8, -1, -1, 11, -1, -1, -1, -1, -1, -1]),
             ]
             @test structure_tree(dbn) == res
+        end
+    end
+
+    @testset "structure_tree_full" begin
+        for (dbn, res) in [
+            ""                => (Dict(-1 => Int[]),
+                                  Int[]),
+            "()"              => (Dict(-1 => [1], 1 => Int[]),
+                                  [2, -1]),
+            ".()"             => (Dict(-1 => [2], 2 => Int[]),
+                                  [-1, 3, -1]),
+            "(.)"             => (Dict(-1 => [1], 1 => Int[]),
+                                  [3, -1, -1]),
+            "()()"            => (Dict(-1 => [1, 3], 1 => [], 3 => Int[]),
+                                  [2, -1, 4, -1]),
+            "(()())"          => (Dict(-1 => [1], 1 => [2, 4], 2 => Int[], 4 => Int[]),
+                                  [6, 3, -1, 5, -1, -1]),
+            "...(.(.)(.)..)." => (Dict(-1 => [4], 4 => [6, 9], 6 => Int[], 9 => Int[]),
+                                  [-1, -1, -1, 14, -1, 8, -1, -1, 11, -1, -1, -1, -1, -1, -1]),
+            ]
+            @test structure_tree_full(dbn) == res
+        end
+    end
+
+    @testset "structure_list_postorder" begin
+        for (dbn, res) in [
+            ""                => ([-1 => Int[]],
+                                  Int[]),
+            "()"              => ([1 => Int[], -1 => [1]],
+                                  [2, -1]),
+            ".()"             => ([2 => Int[], -1 => [2]],
+                                  [-1, 3, -1]),
+            "(.)"             => ([1 => Int[], -1 => [1]],
+                                  [3, -1, -1]),
+            "()()"            => ([3 => Int[], 1 => Int[], -1 => [1, 3]],
+                                  [2, -1, 4, -1]),
+            "(()())"          => ([4 => Int[], 2 => Int[], 1 => [2,4], -1 => [1]],
+                                  [6, 3, -1, 5, -1, -1]),
+            "...(.(.)(.)..)." => ([9 => Int[], 6 => Int[], 4 => [6, 9], -1 => [4]],
+                                  [-1, -1, -1, 14, -1, 8, -1, -1, 11, -1, -1, -1, -1, -1, -1]),
+            ]
+            @test structure_list_postorder(dbn) == res
         end
     end
 

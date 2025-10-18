@@ -112,6 +112,33 @@ function structure_tree(dbn::AbstractString)
     return ch, right
 end
 
+# like structure_tree, but also include leaves
+function structure_tree_full(dbn::AbstractString)
+    n = length(dbn)
+    ch = Dict{Int,Vector{Int}}(-1 => Int[])
+    stk = Int[-1]
+    right = repeat([-1], n)
+    for i in 1:n
+        if dbn[i] == '('
+            push!(stk, i)
+            ch[i] = Int[]
+        elseif dbn[i] == ')'
+            length(stk) > 0 || error("Too many closing parens at position $i")
+            left = pop!(stk)
+            push!(ch[stk[end]], left)
+            right[left] = i
+        end
+    end
+    stk == [-1] || error("Missing closing parens, opening parens are at $stk")
+    return ch, right
+end
+
+function structure_list_postorder(dbn::AbstractString)
+    ch, rightmatch = structure_tree_full(dbn)
+    loops_postorder = sort!(collect(ch); rev=true)
+    return loops_postorder, rightmatch
+end
+
 function seq_prob(p_seq::AbstractMatrix, seq::AbstractString)
     # TODO: assert length(p_seq) == length(seq)
     n = length(seq)
