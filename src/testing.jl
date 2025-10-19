@@ -84,8 +84,7 @@ end
 function test_seq_brute(; nrange=1:12, niter_per_n::Int=5, model=RandomModel(), hpmin::Int=HAIRPIN)
     @showprogress "test_seq_brute" for it = 1:niter_per_n, n in nrange
         p_seq = random_p_seq(n)
-        as = AllStructs(n, hpmin)
-        dbn = random_dbn(as)
+        dbn = random_dbn(AllStructs(n, hpmin))
         boltz_fn(seq, dbn) = boltz(seq, dbn, model)
         b_brute = seq_partition_brute_force(p_seq, dbn, boltz_fn)
         b_spart = seq_partition(p_seq, dbn, model)
