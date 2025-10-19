@@ -133,6 +133,10 @@ function structure_tree_full(dbn::AbstractString)
     return ch, right
 end
 
+# TODO: this is a correct post-order traversal, as parent indices are
+# always smaller than child indices, but the child nodes of a parent
+# will appear in reverse order, from larger to smaller indices (so
+# children will be iterated in 3'->5' order)
 function structure_list_postorder(dbn::AbstractString)
     ch, rightmatch = structure_tree_full(dbn)
     loops_postorder = sort!(collect(ch); rev=true)
