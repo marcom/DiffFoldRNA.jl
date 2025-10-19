@@ -55,7 +55,7 @@ const MATCH_DBN = [
             @test ! is_valid_dbn("."^n * ")"^n)
             @test ! is_valid_dbn("("^(n-1) * "."^(n-1) * ")"^(n-1) * ")")
         end
-        @test_broken ! is_valid_dbn("(.")
+        @test ! is_valid_dbn("(.")
     end
     
     @testset "matching_to_dbn" begin
@@ -65,15 +65,14 @@ const MATCH_DBN = [
         for (match, dbn) in MATCH_DBN
             @test matching_to_dbn(match) == dbn
         end
-        # broken tests: these should throw Exceptions as the input is
-        # an illegal match, but they currently return a String with
-        # unbalanced parentheses
+        # These should throw Exceptions as the input is an illegal
+        # match
         for match in [
             [2],
             [1,3],
             [3,1],
             ]
-            @test_broken (try matching_to_dbn(match) catch e; e; end) isa Exception
+            @test (try matching_to_dbn(match) catch e; e; end) isa Exception
         end
     end
 

@@ -60,19 +60,33 @@ function is_valid_dbn(dbn::AbstractString)
             return false
         end
     end
+    if length(stk) != 0
+        return false
+    end
     return true
 end
 
 function matching_to_dbn(match::Vector{Int})
-    dbn = Char[]
+    n = length(match)
+    dbn = fill('.', n)
+    opened = 0
     for i in 1:length(match)
-        if match[i] < i
-            push!(dbn, ')')
-        elseif match[i] > i
-            push!(dbn, '(')
-        else
-            push!(dbn, '.')
+        if match[i] < 1 || match[i] > n
+            error("Illegal match: $match")
         end
+        if match[i] < i
+            if opened <= 0
+                error("Illegal match: $match")
+            end
+            dbn[i] = ')'
+            opened -= 1
+        elseif match[i] > i
+            dbn[i] = '('
+            opened += 1
+        end
+    end
+    if opened != 0
+        error("Illegal match: $match")
     end
     return join(dbn)
 end
