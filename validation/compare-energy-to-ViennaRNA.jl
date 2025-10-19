@@ -9,7 +9,7 @@ import ViennaRNA
 
 const DBN_HAIRPINS   = ["(" * "."^n * ")" for n = 3:32]
 const DBN_INTLOOPS   = vec(["(" * "."^n1 * "(...)" * "."^n2 * ")"
-                            for n1 in [0:5..., 29], n2 in [0:5..., 29]])
+                            for n1 in [0:6..., 29, 32], n2 in [0:6..., 29, 32]])
 const DBN_EXTLOOPS   = ["(...)(...)", "(...).(...)", "(...)..(...)", ".(...).(...)(...).(...)"]
 const DBN_MULTILOOPS = ["(.(...)(...))", "((...).(...)((...)(...).))"]
 const DBN_MISC = [
