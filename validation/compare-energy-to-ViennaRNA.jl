@@ -38,7 +38,7 @@ function main(args)
     hpmin = 3
 
     Ten = typeof(1.0u"kcal/mol")
-    @testset "compare energy(seq, dbn) vs ViennaRNA, atol=$atol" begin
+    @testset verbose=true "compare energy(seq, dbn) vs ViennaRNA, atol=$atol" begin
         df = DataFrame(len=Int[], seq=String[], dbn=String[], en_jl=Ten[], en_vrna=Ten[], delta=Ten[])
 
         @testset "fixed dbn, random seq" verbose=true begin
