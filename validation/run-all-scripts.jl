@@ -22,6 +22,7 @@ function main(args)
         "check-seqstruct-partition-All1Model-vienna-vs-nussinov.jl",
         "check-seqstruct-partition-nussinov-vs-bruteforce.jl",
         "check-seqstruct-partition-vienna-vs-bruteforce.jl",
+        "check-seq-partition-randseq-onehot-vs-bruteforce.jl",
     ]
     println("n_start = $n_start, n_end = $n_end, atol = $atol")
     println("scripts_to_check =")

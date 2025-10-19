@@ -12,7 +12,7 @@ cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 julia --project=. -e 'import Pkg; Pkg.test()'
 
 # validation scripts
-julia --project=validation validation/quickcheck-all-scripts-working.jl
+julia --project=validation validation/run-all-scripts.jl
 
 # benchmark scripts
 julia --project=benchmark benchmark/old-bench-seqstruct-partition.jl
