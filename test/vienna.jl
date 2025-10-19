@@ -46,7 +46,7 @@ using DiffFoldRNA: test_all_1_nussinov_vienna, test_model_brute_vienna,
 
     # test_seq_one_hot: RandomModel
     @testset "test_seq_one_hot" begin
-        @showprogress "test_seq_one_hot, RandomModel/ViennaModel, rand seq/dbn, n = 1:20, 40, 50, 60" for n in 1:20
+        @showprogress "test_seq_one_hot, RandomModel/ViennaModel, rand seq/dbn, n = 1:20" for n in 1:20
             for (em, hpmin) in [
                 RandomModel()   => 0,
                 RandomModel(5)  => 1,
