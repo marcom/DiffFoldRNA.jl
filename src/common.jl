@@ -20,6 +20,9 @@ const ALL_PAIRS_TO_BASETYPES = [
 ]
 const NBPS = length(ALL_PAIRS)
 const HAIRPIN = 0
+# These special hairpins are only used by the All1Model and
+# RandomModel, ViennaModel uses the special hairpins loaded from the
+# ViennaRNA parameter files (see src/energy.jl)
 const SPECIAL_HAIRPINS = ["CAACG", "GUUAC"]  # Not complete
 
 # TODO: some functions missing
